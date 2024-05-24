@@ -1,0 +1,79 @@
+wandb_params:
+  entity: sjtu-lx-lab
+  project_name: nomad-nuplan
+  run_name: nomad-nuplaN-lightning
+
+data_params:
+  image_size: [96, 54] # width, height, img in nuplan 1920*1080 (16:9) will be resize to image_size
+  tranform:
+    norm:
+      mean: [0.485, 0.456, 0.406]
+      std: [0.229, 0.224, 0.225]
+  data_folder: /home/zhangshenghong_lx/dataset/test_12_10_load_only_one_db_file/nuplan_nomad_split
+  data_traj_folder: /home/zhangshenghong_lx/dataset/test_12_10_load_only_one_db_file/nuplan_nomad
+  sample_step: 1
+  waypoint_spacing: 1
+  displacement_norm: [0, 20]
+  deploy_unnorm:    # only for deploy
+    min: [0, 0]   # [min_dx, min_dy]
+    max: [20, 20]     # [max_dx, max_dy]
+
+model_params:
+  len_traj_pred: 32   # it should be 2^n
+  vision_encoder:
+    type: nomad_gps
+    encoding_size: 256
+    context_size: 20 # num past obs img input
+    mha_num_attention_heads: 4
+    mha_num_attention_layers: 4
+    mha_ff_dim_factor: 4
+  noise_pred_net:
+    down_dims: [64, 128, 256]
+    cond_predict_scale: False
+    num_diffusion_iters: 10 # noise scheduler
+  action_norm: True # normalization for the action space
+
+train_params:
+  seed: 42
+  batch_size: 32
+  eval_batch_size: 32
+  num_workers: 16
+  max_epochs: 150
+  # min_epochs: 1
+  eval_freq: 1    # every eval_freq make a evaluation
+  loss_weight: 1e-3 # loss = alpha * dist_loss + (1-alpha) * diffusion_loss
+  grad_clip_max_norm: 1.  # if 0, no clip
+  optimizer:
+    optimizer: adam # [ adam, adamw, sgd ], defalut: adam with betas: (0.9, 0.98); sgd with momentum: 0.9
+    lr: 5e-4
+    weight_decay: 0.0
+    scheduler:
+      type: cosine # [ cyclic, plateau, cosine]
+      # cyclic
+      cyclic_period: 10
+      # plateau
+      plateau_patience: 3
+      plateau_factor: 0.5
+      # warm up
+      warmup: False
+      warmup_epochs: 4
+
+test: True
+
+visulization:
+  camera_metrics:
+    camera_height: 1.4863211    # meters
+    camera_x_offset: 0.48664093 # distance between the center of the robot and the forward facing camera
+    camera_matrix:
+      fx: 1545
+      fy: 1545
+      cx: 960
+      cy: 560
+    dist_coeffs:
+      k1: -0.356123
+      k2: 0.172545
+      p1: -0.00213
+      p2: 0.000464
+      k3: -0.05231
+
+ckpt_path: /home/zhangshenghong_lx/nuplan_nomad_ws
